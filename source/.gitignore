@@ -1,0 +1,13 @@
+/dist/
+/payload/BoostDeck/
+/payload/ShiftDeck/
+/payload/MhdMaps/
+/payload/tools/
+/native/out/
+/native/build/
+/native/frameworks/
+/native/runtime/
+/native/plugin/*_ALL_Images.zip
+__pycache__/
+.venv/
+.DS_Store

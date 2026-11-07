@@ -1,4 +1,8 @@
 # ID6_apps_prerelease
+
+**[Open-source code and porting guide](source/README.md)** · [Diagnose blank gauges](source/docs/PORTING.md) · [Build and install](source/docs/BUILD.md)
+
+The root ZIPs are existing prerelease snapshots. For the version-controlled code and reproducible build steps, start in `source/`.
 # NBT Evo Gauge Installer
 
 Parked preview for `NBTevo_N18092I`, `NBTevo_V20153I`, and `NBTevo_Y24073J`. The installer puts **BoostDeck**, **ShiftDeck**, and **MHD Maps** under My Vehicle. It checks both on-car HMI framework fingerprints before uploading. The preview has passed static framework checks and desktop installer tests. It still needs an on-car test on each of these builds.

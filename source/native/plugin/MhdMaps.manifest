@@ -1,0 +1,20 @@
+<?xml version='1.0' encoding='utf-8'?>
+<plugin>
+  <name>MhdMaps</name>
+  <type>App</type>
+  <file>{pluginDir}/MhdMaps</file>
+  <config>
+    <autoStart>yes</autoStart>
+    <dependencies>
+      <pluginAppConnector>
+        <type>Etch</type>
+        <id>103</id>
+        <asyncCallbacks>yes</asyncCallbacks>
+      </pluginAppConnector>
+    </dependencies>
+    <parameters>
+      <DescFile>{pluginDir}/MhdMaps.xml</DescFile>
+      <ImageDBFile>{pluginDir}/MhdMaps_ALL_Images.zip</ImageDBFile>
+    </parameters>
+  </config>
+</plugin>

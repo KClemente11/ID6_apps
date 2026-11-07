@@ -1,0 +1,40 @@
+# Port BoostDeck to another car
+
+A gauge can show `--` even when the menu works. A different ECU may reject a diagnostic identifier, return a different number of bytes, or use different scaling. Timeouts, the wrong gateway, an ECU that is asleep, and stale data can look the same on screen.
+
+## 1. Record the setup
+
+Record chassis, model year, engine family, DME and EGS identifiers if available, head-unit firmware, display resolution, and which readings work. Record whether ignition is on and whether the engine is off or idling. Keep the test parked. Use the diagnostic gateway IP and the computer's wired ENET IP from **Find car**. The SSH IP is a separate endpoint.
+
+For an HMI port, use the [build guide](BUILD.md) to check both framework fingerprints and display geometry. A working menu and a responsive tachometer or speed readout are useful control observations, but they do not validate a particular DME identifier.
+
+## 2. Capture a few explicit reads
+
+Exit BoostDeck and ShiftDeck and close other diagnostic clients so the probe has the gateway to itself. Start with RPM, standard OBD coolant, and the existing BMW coolant and oil-pressure candidates. Replace the example IPs with the detected IPs. This probe works with Python 3 on macOS or Windows and does not require head-unit SSH.
+
+```sh
+python3 tools/probe_signals.py --local 169.254.10.2 --gateway 169.254.10.3 --ecu 12 010c 0105 224300 22586f
+python3 tools/probe_signals.py --local 169.254.10.2 --gateway 169.254.10.3 --ecu 18 22da12
+```
+
+On Windows use `py -3` if Python is installed with the launcher. The probe allows only explicit `01` and `22` reads, targets DME or EGS, and bounds and spaces its requests. Keep address, request, complete response, test conditions, and the independent reading for each candidate.
+
+| Observation | Next check |
+| --- | --- |
+| RPM and other reads time out | Verify the direct ENET adapter and gateway, ignition, and diagnostic contention. |
+| `7f 22 31` | This request was rejected as out of range. Look up the relevant job for the specific ECU variant. |
+| `7f 22 22` or other rejection | Record the code and current conditions. Check the job's prerequisites. |
+| Positive reply, gauge stays blank | Check the returned data length, endian order, sentinels, bounds, and staleness logic. |
+| Reading looks plausible | Compare with an independent readout across multiple points before enabling the decoder. |
+
+Use an ECU-matched diagnostic definition or capture the request from a trusted logger you are authorized to use. Match the measurement meaning, ECU address, identifier, length, byte order, sign, offset, units, and invalid sentinels. Coolant can have several sensors. Oil pressure may be actual pressure, target pressure, or a switch state. When supported, `01 05` is a useful coolant reference and decodes as one unsigned byte minus 40 °C. The existing gauge uses the BMW candidate `22 43 00`. There is no universal oil-pressure read in this project.
+
+## 3. Make the smallest decoder change
+
+- Keep the existing profile usable. If a new ECU uses a different layout or scaling, add a distinct profile gated by verified ECU identification. Avoid choosing a formula solely because its result falls inside the display range.
+- Update the request and ECU address in `native/src/collector.c`, and the reply checks and conversion in `native/src/gauge_core.c`. Keep invalid or stale readings blank.
+- Add a captured, de-identified positive fixture and a negative or invalid-length fixture in `native/tests/`. Run `make -C native test` and `python3 tools/test_probe_signals.py`.
+- Change the layout only when needed. Use `native/tools/make_bars.py` or `make_drive_apps.py`, regenerate assets, and keep model IDs, image IDs, worker formats, and connector IDs consistent.
+- Build and install with [BUILD.md](BUILD.md). While parked, compare the display with a trusted tool on the same car. Check the blank or stale state with diagnostics unavailable. Record the tested ECU and firmware separately from supported but untested combinations.
+
+Share a minimal signal table and sanitized examples. Avoid uploading full vehicle captures, identifying data, or framework libraries.

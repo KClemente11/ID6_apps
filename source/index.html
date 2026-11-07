@@ -1,0 +1,182 @@
+<!doctype html>
+<html lang="en">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>NBT Evo Gauge Installer</title>
+<style>
+:root{color-scheme:dark;font-family:system-ui,sans-serif;background:#0d131c;color:#edf2f7}
+*{box-sizing:border-box} body{margin:auto;max-width:740px;padding:32px 20px} h1{margin:0;font-size:clamp(1.8rem,5vw,2.7rem)}
+p{line-height:1.55} a{color:#99d9ff} .lead{color:#b7c8dd;margin-top:.5rem}
+section{padding:21px;border:1px solid #3b4c62;border-radius:12px;background:#152030;margin-top:18px}
+h2{font-size:1.12rem;margin:0 0 14px}.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:14px}
+label{display:block;font-weight:600} input,select,button{font:inherit} input,select{display:block;width:100%;margin-top:5px;border:1px solid #637a93;border-radius:6px;padding:9px;background:#0d1723;color:#fff}
+button{padding:.6rem .9rem;border-radius:7px;color:#101826;background:#f8ad59;border:0;cursor:pointer;font-weight:700} button.secondary{background:#2c3c50;color:#e9f3ff} button:disabled{opacity:.45;cursor:default}
+.buttons{display:flex;flex-wrap:wrap;gap:9px;margin-top:15px} output{display:block;min-height:3rem;white-space:pre-wrap;overflow-wrap:anywhere;line-height:1.55;color:#eaf2ff}
+small,.hint{color:#b7c8dd} .badge{font-size:.8rem;background:#283a50;color:#dceafe;padding:4px 8px;border-radius:5px;vertical-align:middle}
+details{margin-top:15px} summary{cursor:pointer;font-weight:600}
+fieldset{margin:16px 0 0;border:1px solid #3b4c62;border-radius:7px;padding:10px 13px}
+fieldset label{margin:.35rem 0} fieldset input[type=radio]{display:inline;width:auto;margin:0 .4rem 0 0;accent-color:#f8ad59}
+</style>
+<h1>NBT Evo Gauges <span class="badge">0.2.9 Preview</span></h1>
+<p class="lead">BoostDeck · ShiftDeck · MHD Maps for N18092I, V20153I and Y24073J</p>
+<p class="hint">Parked preview. Verify screen fit, touch and vehicle readings on each car. Map selection requires a compatible MHD+ multi-map tune.</p>
+<section>
+<h2>1. Connect over ENET</h2>
+<p>Park the car, power iDrive and connect your computer directly to the OBD port with an ENET cable. Enable temporary SSH using a tool for your exact firmware.</p>
+<p><a href="https://ssh.bavarian-aa.uk/" rel="noopener noreferrer" target="_blank">Bavarian SSH Client downloads</a></p>
+<div class="buttons"><button type="button" id="find">Find car</button></div>
+<label id="choice" hidden>Detected gateway <select id="cars"></select></label>
+<p class="hint">The gateway and head unit usually have different IPs. Use the head unit SSH IP reported by your unlock tool if Find car can only fill the gateway.</p>
+<div class="grid">
+<label>Head unit SSH IP <input id="Head" placeholder="169.254.x.x" autocomplete="off"></label>
+<label>Diagnostic gateway IP <input id="Gateway" placeholder="169.254.x.x" autocomplete="off"></label>
+</div>
+</section>
+<section>
+<h2>2. Identify and install</h2>
+<div class="grid">
+<label>Head unit root SSH password <input id="Password" type="password" autocomplete="off"></label>
+<label>iDrive version (if auto-detection is unavailable) <input id="Version" placeholder="NBTevo_N18092I" autocomplete="off"></label>
+</div>
+<details><summary>Where do I find the version on iDrive?</summary>
+<p>Open Navigation → press OPTIONS → Navigation settings → Position and version → Version information. The full code starts with NBTevo_. Menu wording can vary.</p></details>
+<fieldset id="display-settings" aria-describedby="display-hint">
+<legend>iDrive display resolution</legend>
+<label><input type="radio" name="resolution" value="" checked>Automatic</label>
+<label><input type="radio" name="resolution" value="800x480">800 × 480</label>
+<label><input type="radio" name="resolution" value="1280x480">1280 × 480</label>
+<label><input type="radio" name="resolution" value="1440x540">1440 × 540</label>
+<label><input type="radio" name="resolution" value="1920x720">1920 × 720 (experimental)</label>
+<label><input type="radio" name="resolution" value="custom">Custom (experimental)</label>
+<div id="custom-resolution" hidden>
+<div class="grid">
+<label>Width in pixels <input id="display-width" type="number" min="800" max="1920" step="1"></label>
+<label>Height in pixels <input id="display-height" type="number" min="480" max="720" step="1"></label>
+</div>
+</div>
+<p class="hint" id="display-hint">Choose the resolution iDrive sends to the display. This can differ from the panel’s advertised resolution. The inch size alone does not identify the layout.</p>
+</fieldset>
+<div id="trust" hidden>
+<label>SSH host key fingerprint <input id="Fingerprint" readonly aria-describedby="fingerprint-hint"></label>
+<p class="hint" id="fingerprint-hint">The installer fills this in when Check compatibility reaches the head unit over SSH. Confirm the SSH IP belongs to your connected car and compare the fingerprint with a trusted copy if you have one. Then choose Trust this fingerprint and check.</p>
+</div>
+<div class="buttons">
+<button type="button" id="inspect">Check compatibility</button>
+<button type="button" id="install" disabled>Install all three apps</button>
+<button type="button" id="quit" class="secondary">Quit</button>
+</div>
+<p class="hint">Keep iDrive on and ENET connected during installation. Restart iDrive once the status says <strong>Installed and verified all three apps</strong>.</p>
+<div id="lock-recovery" hidden>
+<p class="hint">The earlier attempt left all three app folders in staging. Close all other installer windows and confirm that no other computer is installing to this car before continuing.</p>
+<button type="button" id="recover" class="secondary">Clear lock and install</button>
+</div>
+</section>
+<section><h2>Status</h2><output id="status" role="status" aria-live="polite">Connect the ENET cable and select Find car, or enter both IPs manually.</output></section>
+<script>
+"use strict";
+const $=id=>document.getElementById(id);
+const fields=["Head","Gateway","Version"];
+let local="", detected=[], fingerprint="", busy=false, ready=false;
+function controls(){
+  $("find").disabled=busy;
+  $("inspect").disabled=busy;
+  $("install").disabled=busy||!ready;
+  $("recover").disabled=busy;
+  $("display-settings").disabled=busy;
+  $("quit").disabled=busy;
+}
+function reset(){
+  fingerprint=""; ready=false;
+  $("lock-recovery").hidden=true;
+  $("trust").hidden=true;
+  $("Fingerprint").value="";
+  $("inspect").textContent="Check compatibility";
+  controls();
+}
+for (const field of fields) $(field).addEventListener("input",()=>{
+  ready=false;
+  $("lock-recovery").hidden=true;
+  if (field==="Head"||field==="Gateway"){local="";reset();}
+  controls();
+});
+function displayChoice(){return document.querySelector('input[name="resolution"]:checked').value;}
+$("display-settings").addEventListener("input",()=>{
+  $("custom-resolution").hidden=displayChoice()!=="custom";
+  $("lock-recovery").hidden=true;
+  ready=false;controls();
+});
+function pick(){
+  const item=detected[Number($("cars").value)];
+  if(!item)return;
+  local=item.Local;
+  $("Gateway").value=item.Gateway;
+  $("Head").value=item.Head;
+  reset();
+  $("status").textContent=item.Head?"Head unit and gateway found. Check compatibility.":"Gateway found. Enter the SSH IP from your unlock tool.";
+}
+$("cars").addEventListener("change",pick);
+async function request(action,body={}){
+  busy=true; controls();
+  try{
+    const result=await fetch(action,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(body)});
+    if(!result.ok)throw new Error("The local installer did not respond.");
+    return await result.json();
+  }finally{busy=false;controls();}
+}
+$("find").onclick=async()=>{
+  $("status").textContent="Looking for a gateway on the direct ENET link…";
+  try{
+    const result=await request("discover");
+    if(!Array.isArray(result)){$("status").textContent=result.Result;return;}
+    detected=result;
+    $("cars").replaceChildren(...detected.map((item,i)=>new Option(item.Gateway+" via "+item.Local,String(i))));
+    $("choice").hidden=result.length===1;
+    if(result.length===1)pick();
+    else {
+      local=""; $("Gateway").value=""; $("Head").value=""; reset();
+      $("cars").selectedIndex=-1;
+      $("status").textContent="Multiple gateways replied. Select your car.";
+    }
+  }catch(e){$("status").textContent=e.message;}
+};
+async function vehicle(action){
+  if(!fields.slice(0,2).every(k=>$(k).value.trim())){$("status").textContent="Enter both ENET IPs.";return;}
+  const body={};
+  for(const name of fields)body[name]=$(name).value.trim();
+  body.Local=local; body.Fingerprint=fingerprint; body.Password=$("Password").value;
+  body.DisplayResolution=displayChoice();
+  if(body.DisplayResolution==="custom"){
+    const width=$("display-width"), height=$("display-height");
+    if(!width.value||!height.value||!width.checkValidity()||!height.checkValidity()){
+      $("status").textContent="Enter a whole pixel width of 800–1920 and height of 480–720.";
+      return;
+    }
+    body.DisplayResolution=width.value+"x"+height.value;
+  }
+  ready=false;
+  $("status").textContent=action==="inspect"?"Checking the head unit…":"Installing and reading back all files…";
+  try{
+    const result=await request(action,body);
+    ready=result.Ready===true;
+    $("lock-recovery").hidden=result.CanRecover!==true;
+    $("status").textContent=[result.Version,result.Display&&"Display "+result.Display,result.Touch,result.Result].filter(Boolean).join("\n");
+    if(result.Fingerprint && !fingerprint){
+      fingerprint=result.Fingerprint;
+      $("Fingerprint").value=fingerprint;
+      $("trust").hidden=false;
+      $("inspect").textContent="Trust this fingerprint and check";
+    }else if(result.Version){
+      $("inspect").textContent="Check compatibility";
+    }
+  }catch(e){$("status").textContent=e.message;}
+  finally{controls();}
+}
+$("inspect").onclick=()=>vehicle("inspect");
+$("install").onclick=()=>vehicle("install");
+$("recover").onclick=()=>{
+  if(confirm("Have you closed every other installer and confirmed that no other computer is installing to this car?")) vehicle("recover");
+};
+$("quit").onclick=async()=>{
+  try{await request("quit");}finally{$("status").textContent="Installer closed. You can close this tab.";}
+};
+</script>

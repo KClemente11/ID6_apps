@@ -1,0 +1,207 @@
+<?xml version='1.0' encoding='utf-8'?>
+<pluginApps>
+  <pluginApp applicationType="VehicleInformation" applicationWeight="210" text="BoostDeck">
+    <entryButton id="1" action="10">
+      <properties>
+        <property id="23" value="2" />
+      </properties>
+    </entryButton>
+    <actions>
+      <hmiAction id="10" target="100" />
+      <hmiAction id="31" target="104" />
+      <raAction id="40" />
+      <raAction id="41" />
+      <raAction id="42" />
+      <raAction id="43" />
+      <raAction id="44" />
+      <raAction id="45" />
+      <raAction id="46" />
+      <raAction id="47" />
+    </actions>
+    <models>
+      <raDataModel id="50" modelType="Richtext" />
+      <imageIdModel id="60" imageId="55000" />
+      <raDataModel id="51" modelType="Richtext" />
+      <imageIdModel id="61" imageId="55000" />
+      <raDataModel id="52" modelType="Richtext" />
+      <imageIdModel id="62" imageId="55000" />
+      <raDataModel id="53" modelType="Richtext" />
+      <imageIdModel id="63" imageId="55000" />
+      <raDataModel id="54" modelType="Richtext" />
+      <imageIdModel id="64" imageId="55000" />
+      <raDataModel id="55" modelType="Richtext" />
+      <imageIdModel id="65" imageId="55000" />
+      <raDataModel id="56" modelType="Richtext" />
+      <imageIdModel id="66" imageId="55000" />
+      <raDataModel id="57" modelType="Richtext" />
+      <imageIdModel id="67" imageId="55000" />
+      <raDataModel id="110" modelType="Richtext" />
+    </models>
+    <hmiStates>
+      <hmiState id="100" text="BoostDeck">
+        <optionComponents>
+          <button id="33" action="31" text="Gauge color" />
+        </optionComponents>
+        <components>
+          <image id="200" model="60">
+            <properties>
+              <property id="20" value="52" />
+              <property id="21" value="22" />
+              <property id="9" value="512" />
+              <property id="10" value="17" />
+              <property id="2" value="false" />
+              <property id="3" value="true" />
+            </properties>
+          </image>
+          <label id="150" model="50">
+            <properties>
+              <property id="20" value="52" />
+              <property id="21" value="45" />
+              <property id="9" value="516" />
+              <property id="10" value="55" />
+            </properties>
+          </label>
+          <image id="201" model="61">
+            <properties>
+              <property id="20" value="52" />
+              <property id="21" value="123" />
+              <property id="9" value="512" />
+              <property id="10" value="17" />
+              <property id="2" value="false" />
+              <property id="3" value="true" />
+            </properties>
+          </image>
+          <label id="151" model="51">
+            <properties>
+              <property id="20" value="52" />
+              <property id="21" value="146" />
+              <property id="9" value="516" />
+              <property id="10" value="55" />
+            </properties>
+          </label>
+          <image id="202" model="62">
+            <properties>
+              <property id="20" value="52" />
+              <property id="21" value="224" />
+              <property id="9" value="512" />
+              <property id="10" value="17" />
+              <property id="2" value="false" />
+              <property id="3" value="true" />
+            </properties>
+          </image>
+          <label id="152" model="52">
+            <properties>
+              <property id="20" value="52" />
+              <property id="21" value="247" />
+              <property id="9" value="516" />
+              <property id="10" value="55" />
+            </properties>
+          </label>
+          <image id="203" model="63">
+            <properties>
+              <property id="20" value="52" />
+              <property id="21" value="325" />
+              <property id="9" value="512" />
+              <property id="10" value="17" />
+              <property id="2" value="false" />
+              <property id="3" value="true" />
+            </properties>
+          </image>
+          <label id="153" model="53">
+            <properties>
+              <property id="20" value="52" />
+              <property id="21" value="348" />
+              <property id="9" value="516" />
+              <property id="10" value="55" />
+            </properties>
+          </label>
+          <image id="204" model="64">
+            <properties>
+              <property id="20" value="620" />
+              <property id="21" value="22" />
+              <property id="9" value="512" />
+              <property id="10" value="17" />
+              <property id="2" value="false" />
+              <property id="3" value="true" />
+            </properties>
+          </image>
+          <label id="154" model="54">
+            <properties>
+              <property id="20" value="620" />
+              <property id="21" value="45" />
+              <property id="9" value="516" />
+              <property id="10" value="55" />
+            </properties>
+          </label>
+          <image id="205" model="65">
+            <properties>
+              <property id="20" value="620" />
+              <property id="21" value="123" />
+              <property id="9" value="512" />
+              <property id="10" value="17" />
+              <property id="2" value="false" />
+              <property id="3" value="true" />
+            </properties>
+          </image>
+          <label id="155" model="55">
+            <properties>
+              <property id="20" value="620" />
+              <property id="21" value="146" />
+              <property id="9" value="516" />
+              <property id="10" value="55" />
+            </properties>
+          </label>
+          <image id="206" model="66">
+            <properties>
+              <property id="20" value="620" />
+              <property id="21" value="224" />
+              <property id="9" value="512" />
+              <property id="10" value="17" />
+              <property id="2" value="false" />
+              <property id="3" value="true" />
+            </properties>
+          </image>
+          <label id="156" model="56">
+            <properties>
+              <property id="20" value="620" />
+              <property id="21" value="247" />
+              <property id="9" value="516" />
+              <property id="10" value="55" />
+            </properties>
+          </label>
+          <image id="207" model="67">
+            <properties>
+              <property id="20" value="620" />
+              <property id="21" value="325" />
+              <property id="9" value="512" />
+              <property id="10" value="17" />
+              <property id="2" value="false" />
+              <property id="3" value="true" />
+            </properties>
+          </image>
+          <label id="157" model="57">
+            <properties>
+              <property id="20" value="620" />
+              <property id="21" value="348" />
+              <property id="9" value="516" />
+              <property id="10" value="55" />
+            </properties>
+          </label>
+        </components>
+      </hmiState>
+      <hmiState id="104" parentId="100" text="Gauge color">
+        <components>
+          <label id="389" model="110" />
+          <button id="390" action="40" text="BMW Orange" />
+          <button id="391" action="41" text="Blue" />
+          <button id="392" action="42" text="Green" />
+          <button id="393" action="43" text="White" />
+          <button id="394" action="44" text="Purple" />
+          <button id="395" action="45" text="Pink" />
+          <button id="396" action="46" text="Cyan" />
+          <button id="397" action="47" text="Red" />
+        </components>
+      </hmiState>
+    </hmiStates>
+  </pluginApp>
+</pluginApps>
