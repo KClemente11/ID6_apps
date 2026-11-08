@@ -1,37 +1,21 @@
-# ID6_apps_prerelease
+# NBT Evo ID6 apps
 
-[AgentReadMe](AgentReadMe.md) covers setup, automation, and unlisted firmware.
+Park your car, connect it to your computer with ENET, and hand this repository to an AI agent that can run commands on that computer. The agent uses [AgentReadMe.md](AgentReadMe.md) to identify your head unit, check compatibility, and install BoostDeck, ShiftDeck, and MHD Maps under **My Vehicle** when the checks pass.
 
-**[Open-source code and porting guide](source/README.md)** · [Diagnose blank gauges](source/docs/PORTING.md) · [Build and install](source/docs/BUILD.md)
+## Start with your car and an agent
 
-The root ZIPs are existing prerelease snapshots. For the version-controlled code and reproducible build steps, start in `source/`.
-# NBT Evo Gauge Installer
+1. Park the car, switch on the ignition, and wait for iDrive to start. Connect the car's OBD port to the computer with a wired ENET cable. Use a USB Ethernet adapter if needed.
+2. Open an AI agent with terminal access on that computer, such as Codex running locally. Give it the prompt below. The agent needs access to the computer plugged into the car.
+3. Stay with the car. The agent may need you to enable temporary SSH with the unlock tool, read the firmware version from iDrive, or verify the SSH fingerprint. Keep iDrive awake and ENET connected through the install. Restart iDrive only after the agent confirms the installed files were verified, then check the menus while parked.
 
-Parked preview for `NBTevo_N18092I`, `NBTevo_V20153I`, and `NBTevo_Y24073J`. The installer puts **BoostDeck**, **ShiftDeck**, and **MHD Maps** under My Vehicle. It checks both on-car HMI framework fingerprints before uploading. The preview has passed static framework checks and desktop installer tests. It still needs an on-car test on each of these builds.
+### Copy this into your agent
 
-BoostDeck shows boost, AFR, timing, intake air, transmission, rail pressure, oil pressure, and coolant. Its BMW-specific signal definitions come from the reference 2016 340i. Some cars will return fewer signals or use different definitions. Compare the values with a known-good logger before relying on them. ShiftDeck reads standard OBD RPM and speed and starts with a 6,500 RPM shift-light target.
+> My car is parked, iDrive is awake, and this computer is connected to the car over wired ENET. Read https://github.com/inotbarnacle/ID6_apps_prerelease/blob/main/AgentReadMe.md and follow it on this computer to install BoostDeck, ShiftDeck, and MHD Maps. Identify my head unit and check its firmware, framework hashes, and active display resolution. Use the local installer automation when the checks pass. If the firmware is unlisted or the frameworks differ, start with the read-only compatibility capture and follow the porting workflow. Tell me when you need me at the car. Have me enter any SSH password locally. After installation, tell me when to restart iDrive and what to verify.
 
-## Connect and install
+## What the agent checks
 
-1. Park the car, switch on the ignition, and plug a wired ENET cable into the OBD port and your computer. Use a USB Ethernet adapter if needed.
-2. Enable temporary SSH with an unlock tool that supports the exact head unit. [Bavarian SSH Client downloads](https://ssh.bavarian-aa.uk/)
-3. Open **NBT Evo Gauge Installer**. The Mac ZIP contains a universal app for Apple silicon and Intel. The Windows ZIP contains an x64 executable. The app opens its interface in your browser on localhost. The Mac build is ad-hoc signed and the Windows build is unsigned.
-4. Click **Find car**. The gateway IP and head-unit SSH IP are separate. If discovery only fills the gateway, take the SSH IP from the unlock tool. For manual troubleshooting, `ifconfig` on macOS or `ipconfig` on Windows shows the computer's ENET adapter. On macOS, `arp -an` and on Windows, `arp -a` show ENET neighbors the computer has seen.
-5. Click **Check compatibility**. The first successful SSH handshake fills in the head unit's host key fingerprint. Confirm the SSH IP belongs to your connected car and compare the fingerprint with a trusted copy if you have one. Then click **Trust this fingerprint and check**. The installer expects the same host key for later SSH connections in this session. If iDrive does not expose its firmware string over SSH, enter the full NBTevo code from the navigation version information screen. The installer checks the live framework fingerprints even when you supply the code.
-6. Confirm that the installer shows the expected firmware and display size, then click **Install all three apps**. Restart iDrive while parked and open BoostDeck, ShiftDeck, or MHD Maps under **My Vehicle**. Check the layouts, controller navigation, and taps on native buttons if the car has touch. Gauge data and map requests use the vehicle's diagnostic connection.
+The published installer has profiles for `NBTevo_N18092I`, `NBTevo_V20153I`, and `NBTevo_Y24073J`. The agent checks the exact firmware and both framework hashes before writing files. An unlisted build needs compatibility work and parked validation before it can be treated as supported. [Unlisted firmware workflow](AgentReadMe.md#bring-up-an-unlisted-firmware)
 
-## MHD Maps
+BoostDeck's BMW-specific gauge definitions come from a 2016 340i and may vary by ECU. ShiftDeck uses standard OBD RPM and speed. MHD Maps requires a compatible MHD+ multi-map tune. Check the active slot in MHD separately if you test map switching. [Signal and map details](source/README.md)
 
-On a car already running a compatible [MHD+ multi-map tune](https://mhd-tuning.atlassian.net/wiki/spaces/MFS2/pages/11763743/MHD%2BSuite), open **My Vehicle → MHD Maps**. The four tiles send a map request with one press. For the parked test, select a slot you have configured for the fuel in the car. The confirmation text reflects the DME's acknowledgement of the request. Verify the active slot separately in MHD. A timeout leaves the outcome unknown, so check the active slot before another press.
-
-## Display and touch
-
-The original compatibility reports identify the firmware and HMI libraries. The installer reads the active central display size from the live head unit. It supports layout profiles for 800 × 480, 1280 × 480, and 1440 × 540. An unrecognized or unavailable display size stops installation. The 1440 × 540 profile scales the known layout proportionally. The 800 × 480 profile fits the bars into narrower columns and preserves the aspect ratio of the shift graphics and map tiles. These profiles need a visual check on the car.
-
-Touch coding, when available in the factory CarPlay configuration, appears in the compatibility result. The gauge screens use native iDrive controls. The controller and OPTIONS button provide access to settings, and touch-equipped cars can test tapping the settings buttons. The installer leaves touch coding alone.
-
-## Recovery
-
-The installer stages and reads back every file before publishing. If it replaces an existing BoostDeck, ShiftDeck, or MHD Maps directory, it retains the old one in the backup directory displayed by the installer. Publication moves only these three app folders. Save the backup path before restarting iDrive.
-
-If an app misbehaves after restart, enable temporary SSH. Move the installed app directory out of `/var/opt/hmi/data/ID5/Plugins` into a separate recovery directory. Restore its `old-BoostDeck`, `old-ShiftDeck`, or `old-MhdMaps` backup from the reported location if there was a prior install. Then restart iDrive while parked.
+The macOS and Windows ZIPs at the root are archived prerelease snapshots. Start with the agent workflow above. Build instructions, installer internals, and recovery steps are available in the source documentation. [Agent runbook](AgentReadMe.md) · [Source](source/README.md) · [Build and recovery](source/docs/BUILD.md)
