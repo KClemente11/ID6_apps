@@ -35,6 +35,8 @@ The script compiles the native libraries, worker executables, and the small ARM 
 
 ## New firmware
 
+Use the [unlisted firmware runbook](../../AgentReadMe.md#bring-up-an-unlisted-firmware) and [read-only capture tool](../tools/capture_headunit.py) to collect the platform, display, and framework evidence before building a candidate profile.
+
 Read `/opt/sys/etc/nbt_version.txt`, `uname -a`, and `/opt/sys/bin/LayerManagerControl get screen 0` over SSH. Record the on-screen version and known iDrive pixel resolution if the corresponding automatic query fails. Compare the two framework hashes with `profiles` in `install.go`. For a different pair, compare static ABI evidence with the already tested reference using `native/tools/audit_framework_abi.py` with `pyelftools` and `capstone`. Verify all imported symbols, constructor signatures, and vtable slots, then run a parked load and lifecycle test on that firmware. Static similarity alone does not establish runtime compatibility. Add a firmware entry only with matching evidence. Keep firmware approval separate from the vehicle's DME/EGS signal mapping.
 
 For example, compare the candidate against an independently preserved reference library pair:

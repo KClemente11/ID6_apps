@@ -1,5 +1,7 @@
 # NBT Evo ID6 Apps
 
+[AgentReadMe](../AgentReadMe.md) covers setup, automation, and unlisted firmware.
+
 Source for **BoostDeck**, **ShiftDeck**, and **MHD Maps**, plus the Mac and Windows x64 ENET installer. This is a parked preview for selected ARM/QNX NBT Evo builds. Firmware compatibility, screen geometry, and engine signal compatibility are checked separately.
 
 - [Start here if a gauge is blank](docs/PORTING.md)
@@ -12,6 +14,7 @@ Source for **BoostDeck**, **ShiftDeck**, and **MHD Maps**, plus the Mac and Wind
 | [native/tools/](native/tools/) and [native/plugin/](native/plugin/) | Layout generators, RHMI XML, button actions, and connector manifests |
 | [native/src/collector.c](native/src/collector.c) | ECU address, diagnostic requests, polling, and signal validity |
 | [native/src/gauge_core.c](native/src/gauge_core.c) | Length, scaling, bounds, stale data, and unit conversions |
+| [tools/capture_headunit.py](tools/capture_headunit.py) | Read-only firmware and framework capture for listed and unlisted builds |
 | [tools/probe_signals.py](tools/probe_signals.py) | Read-only ENET probe for named OBD PIDs and BMW DIDs |
 | [install.go](install.go), [display.go](display.go), and [native/fileops.c](native/fileops.c) | Framework matching, display scaling, installation, and recovery |
 

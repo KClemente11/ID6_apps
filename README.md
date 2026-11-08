@@ -1,5 +1,7 @@
 # ID6_apps_prerelease
 
+[AgentReadMe](AgentReadMe.md) covers setup, automation, and unlisted firmware.
+
 **[Open-source code and porting guide](source/README.md)** · [Diagnose blank gauges](source/docs/PORTING.md) · [Build and install](source/docs/BUILD.md)
 
 The root ZIPs are existing prerelease snapshots. For the version-controlled code and reproducible build steps, start in `source/`.
