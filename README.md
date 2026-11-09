@@ -27,7 +27,10 @@
 </table>
 
 
-
+This repo contains all of the source files and instructions needed for an agentic ai to compile gauges/menus for your specific resolution and version of idrive, please simply link this repo to an ai that can control your pc such as Codex and let the magic happen!
+I would personally recommend GPT Sol 6.1 with High reasoning because it is fully capable of doing all this and still gives you a good amount of usage time.
+By the way, all of these menus have extra options, for example if you are in the boost/afr menu, you can press the "Options" button on your idrive controller to access color changes for the gauges! 
+Have fun and if you come across any issues, message b58devkev on Instagram, also tag the account if you get it working!! Make sure to share with friends, this is free after all!
 
 Park your car, connect it to your computer with ENET, and hand this repository to an AI agent that can run commands on that computer. The agent uses [AgentReadMe.md](AgentReadMe.md) to identify your head unit, check compatibility, and install BoostDeck, ShiftDeck, and MHD Maps under **My Vehicle** when the checks pass.
 
