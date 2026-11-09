@@ -17,6 +17,7 @@
       <raAction id="45" />
       <raAction id="46" />
       <raAction id="47" />
+      <raAction id="48" />
     </actions>
     <models>
       <raDataModel id="50" modelType="Richtext" />
@@ -200,6 +201,7 @@
           <button id="395" action="45" text="Pink" />
           <button id="396" action="46" text="Cyan" />
           <button id="397" action="47" text="Red" />
+          <button id="398" action="48" text="Multicolor" />
         </components>
       </hmiState>
     </hmiStates>

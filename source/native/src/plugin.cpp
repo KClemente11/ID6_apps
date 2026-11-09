@@ -122,7 +122,8 @@ bool BoostDeck::onInit() {
         &Action::execImpl<BoostDeck,&BoostDeck::changeColor<4> >,
         &Action::execImpl<BoostDeck,&BoostDeck::changeColor<5> >,
         &Action::execImpl<BoostDeck,&BoostDeck::changeColor<6> >,
-        &Action::execImpl<BoostDeck,&BoostDeck::changeColor<7> >
+        &Action::execImpl<BoostDeck,&BoostDeck::changeColor<7> >,
+        &Action::execImpl<BoostDeck,&BoostDeck::changeColor<kMulticolor> >
     };
     typedef char color_handler_count[(sizeof colorHandlers/sizeof colorHandlers[0] ==
                                       sizeof kColorNames/sizeof kColorNames[0]) ? 1 : -1];
@@ -234,7 +235,10 @@ void BoostDeck::refresh() {
             if (fraction<0) fraction=0;
             if (fraction>1) fraction=1;
             unsigned step=static_cast<unsigned>(fraction*kDialSteps+.5);
-            if (step) image += color_*kDialSteps+step;
+            if (step) {
+                const unsigned palette = color_ == kMulticolor ? kMulticolor + i : color_;
+                image += palette*kDialSteps+step;
+            }
         } else {
             snprintf(label,sizeof label,"%s   --",scale.name);
         }

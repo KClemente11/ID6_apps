@@ -16,6 +16,8 @@ TARGETS = (5800, 6000, 6250, 6500, 6700)
 DEFAULT_INDEX = TARGETS.index(6500)
 WHITE, DIM, BLUE, RED = "#f0f4fb", "#90a4ba", "#7bd2ff", "#ff4548"
 LINE = "#42556a"
+BAR_WIDTH = 1104
+BAR_START, BAR_PITCH, BAR_SLANT = 4, (BAR_WIDTH - 28) / 16, 20
 
 
 @lru_cache
@@ -36,11 +38,11 @@ def text(draw, xy, value, size, color=WHITE, anchor="mt"):
 def bitmaps():
     for alert in (False, True):
         for step in range(33):
-            image, d = art((648, 64))
-            x0, pitch, slant = 4, 38.75, 20
+            image, d = art((BAR_WIDTH, 80))
+            x0, pitch, slant = BAR_START, BAR_PITCH, BAR_SLANT
             left, right = x0, x0 + 16*pitch
             def band(a, b, color):
-                d.polygon([(a+slant,4),(b+slant,4),(b,59),(a,59)], fill=color)
+                d.polygon([(a+slant,4),(b+slant,4),(b,75),(a,75)], fill=color)
             ramp = ("#2373e7", "#3287f0", "#409af6", "#55acfd", "#70c4ff",
                     "#ffc050", "#ff944d", "#ff7054")
             for seg in range(16):
@@ -52,7 +54,7 @@ def bitmaps():
                     band(a, fill_to, RED if alert else ramp[seg//2])
             if step:
                 x = min(right-2, left + step*pitch/2)
-                d.line([(x+slant,2),(x,61)], fill=WHITE, width=4)
+                d.line([(x+slant,2),(x,77)], fill=WHITE, width=4)
             yield (BAR_WARN if alert else BAR_BASE)+step, image
 
     for step in range(14):
@@ -60,10 +62,10 @@ def bitmaps():
         d.line([(0,43),(209,43),(253,73),(851,73),(895,43),(1103,43)], fill=LINE, width=2)
         d.line([(254,73),(850,73)], fill="#7093b5" if step!=13 else RED, width=3)
         for i in range(12):
-            x = 308+i*42
+            x = 257+i*50
             bright = "#36d790" if i<5 else "#ffc34d" if i<9 else RED
             dark = "#102c27" if i<5 else "#352a17" if i<9 else "#391a23"
-            d.rounded_rectangle((x,8,x+32,29),radius=5,
+            d.rounded_rectangle((x,4,x+40,31),radius=6,
                                 fill=RED if step==13 else bright if i<step else dark)
         yield LIGHT_BASE+step,image
 
@@ -74,8 +76,8 @@ def bitmaps():
         text(d,(173,101),"RPM",22,DIM,"rt")
         d.line((5,133,173,133),fill=LINE,width=2)
         yield TARGET_BASE+i,image
-        image,d=art((648,9))
-        x=24+round(620*rpm/8000)
+        image,d=art((BAR_WIDTH,9))
+        x=BAR_START+BAR_SLANT+round(16*BAR_PITCH*rpm/8000)
         d.line((x,1,x,8),fill="#ffc34d",width=3)
         yield MARK_BASE+i,image
 
@@ -95,16 +97,16 @@ def bitmaps():
     image,d=art((200,179))
     text(d,(2,3),"SPEED",25,DIM,"lt")
     text(d,(2,143),"MPH",22,DIM,"lt")
-    d.line((2,177,183,177),fill=LINE,width=2)
+    d.line((2,177,143,177),fill=LINE,width=2)
     yield SPEED_LEGEND,image
 
     image,d=art((68,35))
     text(d,(2,3),"RPM",25,DIM,"lt")
     yield RPM_LEGEND,image
 
-    image,d=art((648,51))
+    image,d=art((BAR_WIDTH,51))
     for i in range(17):
-        x=4+round(i*38.75)
+        x=BAR_START+round(i*BAR_PITCH)
         color=RED if i>=14 else WHITE if i%2==0 else LINE
         d.line((x,3,x,17 if i%2==0 else 11),fill=color,width=2)
         if i%2==0:

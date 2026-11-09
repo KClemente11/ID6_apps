@@ -2,7 +2,7 @@ CC ?= cc
 PYTHON ?= python3
 CFLAGS ?= -O2 -std=c99 -Wall -Wextra -Werror
 CORE = src/gauge_core.c
-HEADERS = src/gauge_core.h src/drive_frame.h
+HEADERS = src/gauge_core.h src/drive_frame.h src/diagnostic_lease.h
 .PHONY: assets test
 
 assets:

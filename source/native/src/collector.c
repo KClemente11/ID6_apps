@@ -1,10 +1,12 @@
 #define _POSIX_C_SOURCE 200809L
 #include "gauge_core.h"
+#include "diagnostic_lease.h"
 #include <arpa/inet.h>
 #include <errno.h>
 #include <fcntl.h>
 #include <math.h>
 #include <netinet/in.h>
+#include <netinet/tcp.h>
 #include <poll.h>
 #include <signal.h>
 #include <stdio.h>
@@ -42,12 +44,13 @@ static int transfer(int fd, unsigned char *buf, size_t n, int sending, uint64_t 
 }
 static int connect_gw(const char *host, unsigned port) {
     struct sockaddr_in a;
-    int fd, error = 0;
+    int fd, error = 0, no_delay = 1;
     socklen_t len = sizeof error;
     memset(&a, 0, sizeof a); a.sin_family = AF_INET; a.sin_port = htons((uint16_t)port);
     if (inet_pton(AF_INET, host, &a.sin_addr) != 1) return -1;
     fd = socket(AF_INET, SOCK_STREAM, 0);
     if (fd < 0) return -1;
+    setsockopt(fd, IPPROTO_TCP, TCP_NODELAY, &no_delay, sizeof no_delay);
     if (fcntl(fd, F_SETFL, O_NONBLOCK) < 0) { close(fd); return -1; }
     if (connect(fd, (struct sockaddr *)&a, sizeof a) < 0 && errno != EINPROGRESS) {
         close(fd); return -1;
@@ -97,25 +100,6 @@ static int exchange(int fd, unsigned ecu, const unsigned char *uds, unsigned uds
         return (int)(len-2);
     }
     return -1;
-}
-
-/* An exclusive loopback bind arbitrates gateway use across the two workers.
- * The kernel releases it with the process, including on an abnormal exit. */
-static int reserve_gateway(void) {
-    struct sockaddr_in address;
-    int fd=socket(AF_INET,SOCK_DGRAM,0);
-    if (fd<0) return -1;
-    memset(&address,0,sizeof address);
-    address.sin_family=AF_INET;
-    inet_pton(AF_INET,"127.0.0.1",&address.sin_addr);
-    address.sin_port=htons(42861);
-    if (bind(fd,(struct sockaddr *)&address,sizeof address)<0) {
-        int saved=errno;
-        close(fd);
-        errno=saved;
-        return -1;
-    }
-    return fd;
 }
 
 static unsigned number(const char *s, unsigned lo, unsigned hi) {
@@ -238,7 +222,8 @@ int main(int argc, char **argv) {
     unsigned port=6801, udp_port=DRIVE_PORT, cycles=0, count=0;
     pid_t parent=getppid();
     struct sockaddr_in dest;
-    int fd=-1, sock, lock, i;
+    int fd=-1, sock, lock=-1, i;
+    uint64_t lease_until=0, retry_at=0;
     for (i=1;i<argc;++i) {
         if (!strcmp(argv[i],"--host") && i+1<argc && !host) host=argv[++i];
         else if (!strcmp(argv[i],"--port") && i+1<argc) port=number(argv[++i],1,65535);
@@ -248,10 +233,8 @@ int main(int argc, char **argv) {
     }
     if (!host || parent<=1) return 2;
     signal(SIGINT,stop); signal(SIGTERM,stop); signal(SIGPIPE,SIG_IGN);
-    lock=reserve_gateway();
-    if (lock<0) return 1;
     sock=socket(AF_INET,SOCK_DGRAM,0);
-    if (sock<0) { close(lock); return 1; }
+    if (sock<0) return 1;
     memset(&dest,0,sizeof dest);
     dest.sin_family=AF_INET;
     dest.sin_port=htons((uint16_t)udp_port);
@@ -260,23 +243,37 @@ int main(int argc, char **argv) {
         struct drive_frame f;
         int rpm=-1,kph=-1;
         uint64_t start=bd_mono_ms(), elapsed;
-        if (fd<0) fd=connect_gw(host,port);
-        if (fd>=0 && (!read_live_pid(fd,0x0c,2,&rpm) || !read_live_pid(fd,0x0d,1,&kph))) {
-            close(fd);
-            fd=-1;
-            rpm=kph=-1;
+        if (fd<0 && start>=retry_at) {
+            lock=reserve_gateway();
+            if (lock>=0) {
+                fd=connect_gw(host,port);
+                if (fd<0) {
+                    release_gateway(&fd,&lock);
+                    retry_at=bd_mono_ms()+DIAGNOSTIC_RETRY_MS;
+                } else lease_until=bd_mono_ms()+DIAGNOSTIC_LEASE_MS;
+            }
         }
-        f.sampled_ms=bd_mono_ms();
-        f.rpm=rpm;
-        f.kph=kph;
-        if (sendto(sock,&f,sizeof f,0,(struct sockaddr *)&dest,sizeof dest)!=(ssize_t)sizeof f) break;
+        if (fd>=0) {
+            if (!read_live_pid(fd,0x0c,2,&rpm) || !read_live_pid(fd,0x0d,1,&kph)) {
+                release_gateway(&fd,&lock);
+                retry_at=bd_mono_ms()+DIAGNOSTIC_RETRY_MS;
+            } else {
+                f.sampled_ms=bd_mono_ms();
+                f.rpm=rpm;
+                f.kph=kph;
+                if (sendto(sock,&f,sizeof f,0,(struct sockaddr *)&dest,sizeof dest)!=(ssize_t)sizeof f) break;
+                if (gateway_should_yield(lock,f.sampled_ms,lease_until)) {
+                    release_gateway(&fd,&lock);
+                    retry_at=f.sampled_ms+DIAGNOSTIC_YIELD_MS;
+                }
+            }
+        }
         ++count;
         elapsed=bd_mono_ms()-start;
         if (running) poll(0,0,elapsed<70 ? (int)(70-elapsed) : 10);
     }
-    if (fd>=0) close(fd);
+    release_gateway(&fd,&lock);
     close(sock);
-    close(lock);
     return 0;
 }
 #else
@@ -342,6 +339,9 @@ int main(int argc, char **argv) {
     const unsigned periods[] = {1000,0,0,0,2000,2000,0,0,2000};
     const unsigned first_delay[] = {900,0,0,0,500,1150,0,0,1700};
     uint64_t due[sizeof dids/sizeof dids[0]] = {0};
+    uint64_t failed_until[sizeof dids/sizeof dids[0]] = {0};
+    uint64_t lease_until=0, retry_at=0;
+    int scanned=0;
     for (i = 1; i < (unsigned)argc; ++i) {
         if (!strcmp(argv[i], "--demo")) demo = 1;
         else if (!strcmp(argv[i], "--session")) session = 1;
@@ -356,10 +356,6 @@ int main(int argc, char **argv) {
     if ((!host && !demo) || (host && demo)) { fprintf(stderr, "Choose --host or --demo, never both.\n"); return 2; }
     signal(SIGINT, stop); signal(SIGTERM, stop); signal(SIGPIPE, SIG_IGN);
     if (session && (parent <= 1 || demo)) return 2;
-    if (session) {
-        lock=reserve_gateway();
-        if (lock<0) { perror("diagnostic gateway busy"); return 1; }
-    }
     sock = socket(AF_INET, SOCK_DGRAM, 0);
     if (sock < 0) { perror("UDP socket"); return 1; }
     memset(&dest,0,sizeof dest); dest.sin_family=AF_INET; dest.sin_port=htons((uint16_t)udp_port);
@@ -379,12 +375,22 @@ int main(int argc, char **argv) {
             f.valid=(1u<<BD_COUNT)-1;
             for (i=0;i<BD_COUNT;++i) observed[i]=bd_mono_ms();
         } else {
-            int full_scan = gw < 0;
-            if (full_scan) gw = connect_gw(host, port);
+            int full_scan = session ? !scanned : gw < 0;
+            if (gw < 0 && start >= retry_at) {
+                if (session) lock=reserve_gateway();
+                if (!session || lock>=0) {
+                    gw=connect_gw(host,port);
+                    if (gw<0 && session) {
+                        release_gateway(&gw,&lock);
+                        retry_at=bd_mono_ms()+DIAGNOSTIC_RETRY_MS;
+                    } else if (session) lease_until=bd_mono_ms()+DIAGNOSTIC_LEASE_MS;
+                }
+            }
             for (i=0; gw >= 0 && i < sizeof dids / sizeof dids[0] && running; ++i) {
                 double v = 0;
                 int rc;
                 if (no_trans && dids[i] == 0xda12) continue;
+                if (session && start < failed_until[i]) continue;
                 if (!full_scan && periods[i] && start < due[i]) continue;
                 if (full_scan) due[i]=start+first_delay[i];
                 else if (periods[i]) {
@@ -394,10 +400,14 @@ int main(int argc, char **argv) {
                 if (i != 0) f.valid &= ~(1u << (i-1));
                 rc = read_did(gw, dids[i] == 0xda12 ? 0x18 : 0x12, dids[i], &v);
                 if (rc < 0) {
-                    close(gw);
-                    gw=-1;
-                    f.valid=0;
-                    have_ambient=0;
+                    release_gateway(&gw,&lock);
+                    if (session) {
+                        failed_until[i]=bd_mono_ms()+2000;
+                        retry_at=bd_mono_ms()+DIAGNOSTIC_RETRY_MS;
+                    } else {
+                        f.valid=0;
+                        have_ambient=0;
+                    }
                     break;
                 }
                 if (i == 0) {
@@ -413,19 +423,26 @@ int main(int argc, char **argv) {
                 if (i == 2) v *= 14.7; /* measured lambda -> gasoline-equivalent AFR */
                 f.value[i-1]=v; observed[i-1]=bd_mono_ms(); f.valid |= 1u << (i-1);
             }
+            if (gw>=0) {
+                scanned=1;
+                if (session && gateway_should_yield(lock,bd_mono_ms(),lease_until)) {
+                    release_gateway(&gw,&lock);
+                    retry_at=bd_mono_ms()+DIAGNOSTIC_YIELD_MS;
+                }
+            }
         }
         if (!send_frame(sock,&dest,&f,observed)) { perror("send frame"); running=0; }
         ++count;
         {
             uint64_t elapsed = bd_mono_ms()-start;
-            unsigned idle_ms = elapsed < tick_ms ? (unsigned)(tick_ms-elapsed) : 0;
+            unsigned interval = session && gw<0 ? 55 : tick_ms;
+            unsigned idle_ms = elapsed < interval ? (unsigned)(interval-elapsed) : 0;
             if (!demo && idle_ms < minimum_idle_ms) idle_ms = minimum_idle_ms;
             if (idle_ms) pause_ms((int)idle_ms);
         }
     }
-    if (gw >= 0) close(gw);
+    release_gateway(&gw,&lock);
     close(sock);
-    if (lock>=0) close(lock);
     return 0;
 }
 #endif

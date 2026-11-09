@@ -70,17 +70,17 @@ def shift_app():
         ET.SubElement(props,"property",id="2",value="false")
         ET.SubElement(props,"property",id="3",value="true")
 
-    graphic(54,art.BAR_BASE,257,213,744,86)
+    graphic(54,art.BAR_BASE,52,287,art.BAR_WIDTH,90)
     graphic(55,art.LIGHT_BASE,52,10,1104,76)
     graphic(56,art.TARGET_BASE+art.DEFAULT_INDEX,1003,113,153,135)
-    graphic(57,art.SHIFT_OFF,454,352,350,49)
+    graphic(57,art.SHIFT_OFF,454,215,350,42)
     for i in range(4):
         graphic(60+i,art.DIGIT_BASE+(10 if i in (1,2) else 11),501+i*64,108,64,100)
     graphic(64,art.SPEED_LEGEND,53,108,200,179)
     graphic(65,art.RPM_LEGEND,764,169,68,35)
-    graphic(66,art.SCALE,257,300,744,51)
-    graphic(67,art.LOWER,52,402,1104,20)
-    graphic(68,art.MARK_BASE+art.DEFAULT_INDEX,257,204,744,9)
+    graphic(66,art.SCALE,52,377,art.BAR_WIDTH,42)
+    graphic(67,art.LOWER,52,420,1104,10)
+    graphic(68,art.MARK_BASE+art.DEFAULT_INDEX,52,278,art.BAR_WIDTH,9)
     for i in range(3):
         graphic(70+i,art.DIGIT_BASE+(10 if i==2 else 11),53+i*67,139,67,109)
 

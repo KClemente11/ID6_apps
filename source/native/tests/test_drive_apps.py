@@ -74,5 +74,33 @@ class DriveAppsTest(unittest.TestCase):
             self.assertEqual((rpm,kph), (6250,100))
 
 
+    def test_shift_worker_waits_for_a_busy_gateway(self):
+        with socket.socket() as gateway, socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as lock:
+            gateway.bind(("127.0.0.1", 0))
+            gateway.listen()
+            gateway.settimeout(0.2)
+            lock.bind(("127.0.0.1", 42861))
+            with subprocess.Popen(
+                [BUILD/"shift-deck", "--host", "127.0.0.1",
+                 "--port", str(gateway.getsockname()[1]), "--cycles", "6"],
+                stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
+            ) as worker:
+                try:
+                    with self.assertRaises(TimeoutError):
+                        gateway.accept()
+                    self.assertIsNone(worker.poll())
+                    lock.close()
+                    gateway.settimeout(2)
+                    conn, _ = gateway.accept()
+                    with conn:
+                        conn.settimeout(2)
+                        length, ctrl = struct.unpack(">IH", exact(conn, 6))
+                        self.assertEqual(ctrl, 1)
+                        self.assertEqual(exact(conn, length), bytes.fromhex("f412010c"))
+                finally:
+                    if worker.poll() is None:
+                        worker.terminate()
+
+
 if __name__ == "__main__":
     unittest.main()

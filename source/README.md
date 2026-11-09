@@ -5,6 +5,8 @@
 Source for **BoostDeck**, **ShiftDeck**, and **MHD Maps**, plus the Mac and Windows x64 ENET installer. This is a parked preview for selected ARM/QNX NBT Evo builds. Firmware compatibility, screen geometry, and engine signal compatibility are checked separately.
 
 - [Start here if a gauge is blank](docs/PORTING.md)
+
+BoostDeck offers the original per-gauge palette under **OPTIONS → Gauge color → Multicolor**. ShiftDeck uses a full-width RPM bar. Both workers release the diagnostic gateway between short sessions and retry after connection loss.
 - [Build, package, install, and recover](docs/BUILD.md)
 - [Vehicle signals and current decoder assumptions](docs/SIGNALS.md)
 - [Contributor and agent workflow](AGENTS.md)
